@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html lang="hu" class="scroll-smooth dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Az Erő Törvényei - Interaktív Fizikai Bemutató</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        physics: {
+                            50: '#f0fdf4',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                        },
+                        force: {
+                            cyan: '#06b6d4',
+                            purple: '#a855f7',
+                            amber: '#f59e0b',
+                            rose: '#f43f5e'
+                        }
+                    },
+                    animation: {
+                        'float': 'float 6s ease-in-out infinite',
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'glow': 'glow 2.5s ease-in-out infinite alternate',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px)' },
+                            '50%': { transform: 'translateY(-15px)' },
+                        },
+                        glow: {
+                            '0%': { filter: 'drop-shadow(0 0 15px rgba(6, 182, 212, 0.5))' },
+                            '100%': { filter: 'drop-shadow(0 0 30px rgba(168, 85, 247, 0.8))' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+
+        #hero-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .dark .glass-panel {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+        }
+        .dark .glass-card {
+            background: rgba(30, 41, 59, 0.75);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 40%, #a855f7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.8s cubic-bezier(0.5, 0, 0, 1);
+        }
+        .reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .tilt-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            transform-style: preserve-3d;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #06b6d4;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #3b82f6;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 transition-colors duration-300 relative">
+
+    <!-- NAVIGÁCIÓ -->
+    <nav id="navbar" class="fixed top-0 left-0 w-full z-50 transition-all duration-300 py-4 glass-panel border-b border-slate-200/50 dark:border-slate-800/50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center">
+            <a href="#hero" class="flex items-center gap-3 group">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-force-cyan to-force-purple flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-cyan-500/30 group-hover:rotate-12 transition-transform duration-300">
+                    <i class="fa-solid fa-atom"></i>
+                </div>
+                <span class="text-xl font-black tracking-tight text-slate-900 dark:text-white">PHYSICS<span class="text-force-cyan">LAB</span></span>
+            </a>
+
+            <div class="hidden md:flex items-center space-x-6 font-medium text-sm">
+                <a href="#hero" class="hover:text-force-cyan transition-colors">Kezdőlap</a>
+                <a href="#law1" class="hover:text-force-cyan transition-colors">I. Törvény</a>
+                <a href="#simulator" class="hover:text-force-cyan transition-colors">II. Törvény</a>
+                <a href="#law3" class="hover:text-force-cyan transition-colors">III. Törvény</a>
+                <a href="#forces" class="hover:text-force-cyan transition-colors">Gravitáció</a>
+                <a href="#quiz" class="hover:text-force-cyan transition-colors">Kvíz</a>
+                <a href="#thanks" class="hover:text-force-cyan transition-colors">Zárás</a>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <button id="theme-toggle" class="p-2.5 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:text-force-cyan transition-all focus:outline-none" aria-label="Téma váltása">
+                    <i id="theme-icon" class="fa-solid fa-moon text-lg"></i>
+                </button>
+                <a href="#simulator" class="hidden sm:inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-force-cyan to-blue-600 text-white font-semibold text-sm shadow-md hover:shadow-lg hover:shadow-cyan-500/25 hover:scale-105 transition-all duration-300">
+                    <span>Interaktív Labor</span>
+                    <i class="fa-solid fa-play text-xs"></i>
+                </a>
+                <button id="mobile-menu-btn" class="md:hidden p-2 rounded-lg text-slate-700 dark:text-slate-300">
+                    <i class="fa-solid fa-bars text-2xl"></i>
+                </button>
+            </div>
+        </div>
+
+        <div id="mobile-menu" class="hidden md:hidden px-4 pt-4 pb-6 space-y-3 glass-panel mt-2 border-b border-slate-200 dark:border-slate-800">
+            <a href="#hero" class="block py-2 text-slate-700 dark:text-slate-200 font-medium hover:text-force-cyan">Kezdőlap</a>
+            <a href="#law1" class="block py-2 text-slate-700 dark:text-slate-200 font-medium hover:text-force-cyan">I. Törvény</a>
+            <a href="#simulator" class="block py-2 text-slate-700 dark:text-slate-200 font-medium hover:text-force-cyan">II. Törvény</a>
+            <a href="#law3" class="block py-2 text-slate-700 dark:text-slate-200 font-medium hover:text-force-cyan">III. Törvény</a>
+            <a href="#forces" class="block py-2 text-slate-700 dark:text-slate-200 font-medium hover:text-force-cyan">Gravitáció</a>
+            <a href="#quiz" class="block py-2 text-slate-700 dark:text-slate-200 font-medium hover:text-force-cyan">Kvíz</a>
+            <a href="#thanks" class="block py-2 text-slate-700 dark:text-slate-200 font-medium hover:text-force-cyan">Zárás</a>
+        </div>
+    </nav>
+
+    <!-- 1. HERO SZEKCIÓ -->
+    <section id="hero" class="relative min-h-screen flex items-center justify-center pt-24 pb-16 overflow-hidden">
+        <canvas id="hero-canvas"></canvas>
+
+        <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-force-cyan/20 rounded-full blur-3xl pointer-events-none animate-pulse-slow"></div>
+        <div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-force-purple/20 rounded-full blur-3xl pointer-events-none animate-pulse-slow" style="animation-delay: 2s;"></div>
+
+        <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-card border border-cyan-500/30 text-force-cyan font-semibold text-xs sm:text-sm mb-6 animate-bounce">
+                <i class="fa-solid fa-compass-drafting"></i>
+                <span>Klasszikus Mechanika & Interaktív Dinamika</span>
+            </div>
+
+            <h1 class="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight mb-6 leading-tight">
+                AZ ERŐ <span class="gradient-text animate-glow">TÖRVÉNYEI</span>
+            </h1>
+
+            <p class="max-w-2xl mx-auto text-lg sm:text-xl text-slate-600 dark:text-slate-300 font-light mb-8 leading-relaxed">
+                Fedezd fel, hogyan mozgatják a világot Sir Isaac Newton törvényei! Próbáld ki az interaktív szimulációkat és sajátítsd el a mechanika alapjait látványos módon.
+            </p>
+
+            <div class="inline-block p-4 rounded-2xl glass-card mb-10 border border-slate-300 dark:border-slate-800 shadow-xl">
+                <span class="text-xs uppercase tracking-widest text-slate-400 font-bold block mb-1">A Dinamika Alapegyenlete</span>
+                <div class="text-3xl sm:text-4xl font-extrabold text-force-cyan font-mono">F = m × a</div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+                <a href="#simulator" class="w-full sm:w-auto px-8 py-4 rounded-xl bg-gradient-to-r from-force-cyan via-blue-600 to-force-purple text-white font-bold text-lg shadow-xl shadow-cyan-500/25 hover:shadow-2xl hover:shadow-cyan-500/40 hover:-translate-y-1 transition-all duration-300 text-center flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-sliders"></i>
+                    <span>Kísérletezz a Szimulátorral</span>
+                </a>
+                <a href="#law1" class="w-full sm:w-auto px-8 py-4 rounded-xl glass-card text-slate-800 dark:text-white font-bold text-lg border border-slate-300 dark:border-slate-700 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 hover:-translate-y-1 transition-all duration-300 text-center flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-book-open text-force-cyan"></i>
+                    <span>Törvények megtekintése</span>
+                </a>
+            </div>
+
+            <div class="mt-14 flex justify-center items-center gap-8 text-slate-400 dark:text-slate-600 text-3xl">
+                <i class="fa-solid fa-magnet hover:text-force-cyan transition-colors duration-300 animate-float" style="animation-delay: 0s;" title="Erő"></i>
+                <i class="fa-solid fa-weight-hanging hover:text-force-purple transition-colors duration-300 animate-float" style="animation-delay: 1s;" title="Tömeg"></i>
+                <i class="fa-solid fa-gauge-high hover:text-force-amber transition-colors duration-300 animate-float" style="animation-delay: 2s;" title="Gyorsulás"></i>
+                <i class="fa-solid fa-globe hover:text-force-rose transition-colors duration-300 animate-float" style="animation-delay: 3s;" title="Gravitáció"></i>
+            </div>
+        </div>
+
+        <a href="#law1" class="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex flex-col items-center gap-2 text-slate-400 hover:text-force-cyan transition-colors">
+            <span class="text-xs uppercase tracking-widest font-semibold">Görgess tovább</span>
+            <i class="fa-solid fa-chevron-down animate-bounce text-sm"></i>
+        </a>
+    </section>
+
+    <!-- 2. NEWTON I. TÖRVÉNYE (TEHETETLENSÉG) -->
+    <section id="law1" class="py-24 relative">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+                <div class="lg:col-span-6 reveal">
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-force-cyan/10 text-force-cyan font-bold text-xs uppercase tracking-widest mb-4">
+                        <i class="fa-solid fa-shield-halved"></i>
+                        <span>Newton I. Törvénye</span>
+                    </div>
+                    <h2 class="text-3xl sm:text-5xl font-black mb-6 text-slate-900 dark:text-white">A Tehetetlenség Törvénye</h2>
+                    <p class="text-slate-600 dark:text-slate-300 text-base sm:text-lg mb-6 leading-relaxed">
+                        Minden test megtartja nyugalmi állapotát vagy egyenes vonalú egyenletes mozgását mindaddig, amíg egy külső erő a mozgásállapotának megváltoztatására nem kényszeríti.
+                    </p>
+                    <div class="p-6 rounded-2xl glass-card border border-slate-200 dark:border-slate-800 space-y-4">
+                        <div class="flex items-start gap-4">
+                            <div class="w-10 h-10 rounded-xl bg-force-cyan/20 text-force-cyan flex items-center justify-center shrink-0 font-bold">1</div>
+                            <div>
+                                <h4 class="font-bold text-slate-900 dark:text-white">Nyugalmi állapot</h4>
+                                <p class="text-sm text-slate-500 dark:text-slate-400">Ha az eredő erő nullával egyenlő, a nyugvó test úgy is marad.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-4">
+                            <div class="w-10 h-10 rounded-xl bg-force-cyan/20 text-force-cyan flex items-center justify-center shrink-0 font-bold">2</div>
+                            <div>
+                                <h4 class="font-bold text-slate-900 dark:text-white">Állandó sebességű mozgás</h4>
+                                <p class="text-sm text-slate-500 dark:text-slate-400">Súrlódásmentes közegben a test végtelen ideig halad változatlan sebességgel.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- I. Törvény Interaktív Demó (Csúszás) -->
+                <div class="lg:col-span-6 glass-card p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl reveal">
+                    <h3 class="text-lg font-bold mb-4 flex items-center justify-between">
+                        <span>Tehetetlenség Szimuláció</span>
+                        <span class="text-xs text-force-cyan font-mono" id="law1-status">Állapot: Nyugalom</span>
+                    </h3>
+                    <div class="relative w-full h-56 bg-slate-950 rounded-2xl overflow-hidden border border-slate-800">
+                        <canvas id="law1-canvas" class="w-full h-full"></canvas>
+                    </div>
+                    <div class="mt-4 flex flex-wrap gap-3">
+                        <button id="btn-push-box" class="px-5 py-2.5 rounded-xl bg-force-cyan text-white font-bold text-sm shadow hover:bg-cyan-600 transition-all">
+                            <i class="fa-solid fa-hand-pointer mr-2"></i> Lökés (Kezdeti erő)
+                        </button>
+                        <button id="btn-toggle-law1-friction" class="px-5 py-2.5 rounded-xl bg-slate-800 text-slate-200 font-bold text-sm shadow hover:bg-slate-700 transition-all">
+                            Súrlódás: <span id="law1-friction-text" class="text-rose-400">KIKAPCSOLVA</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 3. INTERAKTÍV SZIMULÁTOR SZEKCIÓ (F = m * a) -->
+    <section id="simulator" class="py-24 relative bg-slate-100/50 dark:bg-slate-900/50 border-y border-slate-200 dark:border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-3xl mx-auto mb-12 reveal">
+                <h2 class="text-xs font-bold uppercase tracking-wider text-force-cyan mb-2">Interaktív Laboratórium</h2>
+                <h3 class="text-3xl sm:text-4xl font-black">Newton II. Törvénye: F = m × a</h3>
+                <div class="w-20 h-1.5 bg-gradient-to-r from-force-cyan to-force-purple mx-auto my-4 rounded-full"></div>
+                <p class="text-slate-600 dark:text-slate-400 text-sm sm:text-base">
+                    Állítsd be a kifejtett <strong>Erőt (F)</strong> és a test <strong>Tömegét (m)</strong>, majd figyeld meg a kiszámított <strong>Gyorsulást (a = F / m)</strong> és az objektum mozgását!
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                <!-- Vezérlőpanel -->
+                <div class="lg:col-span-4 glass-card p-6 sm:p-8 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-800 reveal">
+                    <h4 class="text-lg font-bold mb-6 flex items-center gap-2 text-slate-900 dark:text-white">
+                        <i class="fa-solid fa-sliders text-force-cyan"></i>
+                        <span>Kísérleti Paraméterek</span>
+                    </h4>
+
+                    <!-- Erő csúszka -->
+                    <div class="mb-6">
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="text-sm font-semibold flex items-center gap-2">
+                                <span class="w-3 h-3 rounded-full bg-force-cyan"></span>
+                                Kifejtett Erő (F)
+                            </label>
+                            <span class="font-mono font-bold text-force-cyan text-lg"><span id="val-force">50</span> N</span>
+                        </div>
+                        <input type="range" id="slider-force" min="-100" max="100" value="50" step="5" class="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-force-cyan">
+                        <div class="flex justify-between text-xs text-slate-400 mt-1">
+                            <span>-100 N (Balra)</span>
+                            <span>0 N</span>
+                            <span>+100 N (Jobbra)</span>
+                        </div>
+                    </div>
+
+                    <!-- Tömeg csúszka -->
+                    <div class="mb-6">
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="text-sm font-semibold flex items-center gap-2">
+                                <span class="w-3 h-3 rounded-full bg-force-purple"></span>
+                                Test Tömege (m)
+                            </label>
+                            <span class="font-mono font-bold text-force-purple text-lg"><span id="val-mass">10</span> kg</span>
+                        </div>
+                        <input type="range" id="slider-mass" min="1" max="50" value="10" step="1" class="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-force-purple">
+                        <div class="flex justify-between text-xs text-slate-400 mt-1">
+                            <span>1 kg</span>
+                            <span>25 kg</span>
+                            <span>50 kg</span>
+                        </div>
+                    </div>
+
+                    <!-- Súrlódás Kapcsoló -->
+                    <div class="mb-8 flex items-center justify-between p-4 rounded-xl bg-slate-100 dark:bg-slate-800/60">
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-shoe-prints text-force-amber"></i>
+                            <div>
+                                <div class="text-sm font-semibold">Súrlódási erő</div>
+                                <div class="text-xs text-slate-400">Fékező hatás modellezése</div>
+                            </div>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="toggle-friction" class="sr-only peer">
+                            <div class="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:peer-focus:ring-slate-800 peer-checked:bg-force-amber"></div>
+                        </label>
+                    </div>
+
+                    <!-- Kijelző panel -->
+                    <div class="p-4 rounded-xl bg-slate-900 text-white font-mono space-y-2 border border-slate-800 shadow-inner">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-slate-400">Gyorsulás (a = F / m):</span>
+                            <span class="text-force-amber font-bold" id="val-acc">5.00 m/s²</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-slate-400">Sebesség (v):</span>
+                            <span class="text-force-cyan font-bold" id="val-vel">0.00 m/s</span>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 flex gap-3">
+                        <button id="btn-reset-sim" class="w-full py-3 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 font-bold text-sm transition-all flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-rotate-right"></i>
+                            <span>Alaphelyzet</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Szimulációs Canvas kijelző -->
+                <div class="lg:col-span-8 glass-card p-6 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-800 reveal">
+                    <div class="flex justify-between items-center mb-4">
+                        <span class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-green-500 animate-ping"></span>
+                            Valós idejű fizikai modell
+                        </span>
+                        <div class="flex gap-4 text-xs font-semibold">
+                            <span class="flex items-center gap-1 text-force-cyan"><i class="fa-solid fa-arrow-right"></i> Erő (F)</span>
+                            <span class="flex items-center gap-1 text-force-amber"><i class="fa-solid fa-arrow-right"></i> Gyorsulás (a)</span>
+                        </div>
+                    </div>
+
+                    <div class="relative w-full h-80 bg-slate-950 rounded-2xl overflow-hidden border border-slate-800 shadow-2xl">
+                        <canvas id="sim-canvas" class="w-full h-full block"></canvas>
+                    </div>
+
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-4 italic text-center">
+                        Tipp: Növeld az erőt vagy csökkentsd a tömeget a gyorsabb mozgáshoz!
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 4. NEWTON III. TÖRVÉNYE (HATÁS-ELLENHATÁS) -->
+    <section id="law3" class="py-24 relative">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+                <div class="lg:col-span-6 order-2 lg:order-1 glass-card p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl reveal">
+                    <h3 class="text-lg font-bold mb-4 flex items-center justify-between">
+                        <span>Ütközési & Rugó Kölcsönhatás</span>
+                        <span class="text-xs text-force-purple font-mono">Hatás = -Ellenhatás</span>
+                    </h3>
+                    <div class="relative w-full h-60 bg-slate-950 rounded-2xl overflow-hidden border border-slate-800">
+                        <canvas id="law3-canvas" class="w-full h-full"></canvas>
+                    </div>
+                    <div class="mt-4 flex justify-center">
+                        <button id="btn-trigger-collision" class="px-6 py-3 rounded-xl bg-gradient-to-r from-force-purple to-pink-600 text-white font-bold text-sm shadow hover:scale-105 transition-all flex items-center gap-2">
+                            <i class="fa-solid fa-hand-back-fist"></i>
+                            <span>Testek Összeütköztetése</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-6 order-1 lg:order-2 reveal">
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-force-purple/10 text-force-purple font-bold text-xs uppercase tracking-widest mb-4">
+                        <i class="fa-solid fa-right-left"></i>
+                        <span>Newton III. Törvénye</span>
+                    </div>
+                    <h2 class="text-3xl sm:text-5xl font-black mb-6 text-slate-900 dark:text-white">Hatás - Ellenhatás</h2>
+                    <p class="text-slate-600 dark:text-slate-300 text-base sm:text-lg mb-6 leading-relaxed">
+                        Ha egy test erőt fejt ki egy másik testre, akkor a második test is ugyanakkora, de ellentétes irányú erőt fejt ki az elsőre. Az erők mindig párosával lépnek fel!
+                    </p>
+                    <div class="p-6 rounded-2xl glass-card border border-slate-200 dark:border-slate-800 space-y-3">
+                        <div class="text-center p-3 rounded-xl bg-slate-900 text-force-purple font-mono font-bold text-lg">
+                            F (A hat a B-re) = - F (B hat az A-ra)
+                        </div>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 text-center">
+                            Gyakorlati példa: A rakéta hajtóműve gázt lövell ki lefelé, így a gáz felfelé tolja a rakétát.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 5. GRAVITÁCIÓ ÉS TÖMEGVONZÁS -->
+    <section id="forces" class="py-24 bg-slate-100/50 dark:bg-slate-900/50 border-y border-slate-200 dark:border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-3xl mx-auto mb-16 reveal">
+                <h2 class="text-xs font-bold uppercase tracking-wider text-force-cyan mb-2">Egyetemes Kölcsönhatás</h2>
+                <h3 class="text-3xl sm:text-4xl font-black">A Gravitációs Erő</h3>
+                <div class="w-20 h-1.5 bg-gradient-to-r from-force-cyan to-force-purple mx-auto my-4 rounded-full"></div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- Gravitáció leírás -->
+                <div class="glass-card p-8 rounded-3xl shadow-lg border border-slate-200 dark:border-slate-800 reveal flex flex-col justify-between">
+                    <div>
+                        <div class="w-14 h-14 rounded-2xl bg-blue-500/10 text-blue-500 flex items-center justify-center text-2xl mb-4">
+                            <i class="fa-solid fa-earth-americas"></i>
+                        </div>
+                        <h4 class="text-xl font-bold mb-3">Tömegvonzási Törvény</h4>
+                        <p class="text-slate-600 dark:text-slate-400 text-sm mb-6 leading-relaxed">
+                            Bármely két tömeggel rendelkező test vonzza egymást. Ez az erő egyenesen arányos a tömegek szorzatával, és fordítottan arányos a közöttük lévő távolság négyzetével.
+                        </p>
+                    </div>
+                    <div class="p-4 rounded-xl bg-slate-900 text-white font-mono text-sm text-center">
+                        F = G × (m1 × m2) / r²
+                    </div>
+                </div>
+
+                <!-- Rugalmas Erő -->
+                <div class="glass-card p-8 rounded-3xl shadow-lg border border-slate-200 dark:border-slate-800 reveal flex flex-col justify-between">
+                    <div>
+                        <div class="w-14 h-14 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center text-2xl mb-4">
+                            <i class="fa-solid fa-ring"></i>
+                        </div>
+                        <h4 class="text-xl font-bold mb-3">Rugalmas Erő (Hooke-törvény)</h4>
+                        <p class="text-slate-600 dark:text-slate-400 text-sm mb-6 leading-relaxed">
+                            Egy megnyújtott vagy összenyomott rugóban ébredő erőt a megnyúlás mértéke és a rugóállandó határozza meg. Az erő mindig az alakváltozással ellentétes irányú.
+                        </p>
+                    </div>
+                    <div class="p-4 rounded-xl bg-slate-900 text-white font-mono text-sm text-center">
+                        F = - k × x
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 6. INTERAKTÍV KVÍZ -->
+    <section id="quiz" class="py-24 relative">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12 reveal">
+                <h2 class="text-xs font-bold uppercase tracking-wider text-force-cyan mb-2">Tudásellenőrző</h2>
+                <h3 class="text-3xl sm:text-4xl font-black">Interaktív Fizikai Kvíz</h3>
+                <div class="w-20 h-1.5 bg-gradient-to-r from-force-cyan to-force-purple mx-auto my-4 rounded-full"></div>
+            </div>
+
+            <div class="glass-card p-8 sm:p-10 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 reveal">
+                <div id="quiz-container">
+                    <div class="flex justify-between items-center mb-6 text-xs font-semibold text-slate-400">
+                        <span id="quiz-progress-text">1 / 3 Kérdés</span>
+                        <span id="quiz-score-text" class="text-force-cyan">Pontszám: 0</span>
+                    </div>
+
+                    <h4 id="quiz-question" class="text-xl font-bold mb-6 text-slate-900 dark:text-white">
+                        Kérdés betöltése...
+                    </h4>
+
+                    <div id="quiz-options" class="space-y-4 mb-8"></div>
+
+                    <div id="quiz-feedback" class="hidden p-4 rounded-xl text-sm font-semibold mb-6"></div>
+
+                    <button id="quiz-next-btn" class="hidden w-full py-3.5 rounded-xl bg-gradient-to-r from-force-cyan to-blue-600 text-white font-bold transition-all shadow-lg hover:shadow-cyan-500/25">
+                        Következő Kérdés <i class="fa-solid fa-arrow-right ml-2"></i>
+                    </button>
+                </div>
+
+                <div id="quiz-result" class="hidden text-center py-8">
+                    <div class="w-20 h-20 rounded-full bg-force-cyan/20 text-force-cyan flex items-center justify-center text-4xl mx-auto mb-4">
+                        <i class="fa-solid fa-trophy"></i>
+                    </div>
+                    <h4 class="text-3xl font-black mb-2">Gratulálunk!</h4>
+                    <p class="text-slate-600 dark:text-slate-400 text-lg mb-6">Sikeresen kitöltötted a fizikai tesztet!</p>
+                    <div class="text-2xl font-extrabold text-force-cyan mb-8" id="final-score-text">0 / 3 pont</div>
+                    <button id="quiz-restart-btn" class="px-8 py-3.5 rounded-xl bg-gradient-to-r from-force-cyan to-force-purple text-white font-bold shadow-lg hover:scale-105 transition-all">
+                        Újrázás <i class="fa-solid fa-rotate-right ml-2"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 7. ZÁRÓ DIA: KÖSZÖNÖM A FIGYELMET! -->
+    <section id="thanks" class="py-28 relative overflow-hidden bg-slate-900 text-white border-t border-slate-800">
+        <canvas id="thanks-canvas" class="absolute inset-0 w-full h-full pointer-events-none z-0"></canvas>
+        
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-gradient-to-tr from-force-cyan/20 via-force-purple/20 to-force-amber/20 rounded-full blur-3xl pointer-events-none animate-pulse-slow"></div>
+
+        <div class="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center reveal">
+            <div class="inline-flex items-center gap-2 px-5 py-2 rounded-full glass-card border border-force-cyan/40 text-force-cyan font-semibold text-sm mb-8 shadow-lg shadow-cyan-500/20 animate-bounce">
+                <i class="fa-solid fa-atom"></i>
+                <span>Prezentáció Vége</span>
+            </div>
+
+            <h2 class="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight mb-6 leading-tight">
+                Köszönöm a <span class="gradient-text animate-glow">figyelmet!</span>
+            </h2>
+
+            <p class="text-slate-300 text-lg sm:text-xl font-light max-w-2xl mx-auto mb-10 leading-relaxed">
+                Remélem, ez az interaktívfizikai bemutató segített közelebb hozni Newton törvényeit és a dinamika varázslatos világát.
+            </p>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-12 text-center">
+                <div class="p-5 rounded-2xl glass-card border border-slate-800 hover:border-force-cyan/50 transition-all">
+                    <i class="fa-solid fa-shield-halved text-force-cyan text-3xl mb-2"></i>
+                    <h5 class="font-bold text-sm">I. Tehetetlenség</h5>
+                    <p class="text-xs text-slate-400 mt-1">Állandó sebesség külső erő nélkül</p>
+                </div>
+                <div class="p-5 rounded-2xl glass-card border border-slate-800 hover:border-force-purple/50 transition-all">
+                    <i class="fa-solid fa-bolt text-force-purple text-3xl mb-2"></i>
+                    <h5 class="font-bold text-sm">II. Dinamika</h5>
+                    <p class="text-xs text-slate-400 mt-1">F = m × a összefüggés</p>
+                </div>
+                <div class="p-5 rounded-2xl glass-card border border-slate-800 hover:border-force-amber/50 transition-all">
+                    <i class="fa-solid fa-right-left text-force-amber text-3xl mb-2"></i>
+                    <h5 class="font-bold text-sm">III. Kölcsönhatás</h5>
+                    <p class="text-xs text-slate-400 mt-1">Hatás - ellenhatás párok</p>
+                </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+                <a href="#hero" class="w-full sm:w-auto px-8 py-4 rounded-xl bg-gradient-to-r from-force-cyan via-blue-600 to-force-purple text-white font-bold text-lg shadow-xl shadow-cyan-500/25 hover:shadow-cyan-500/40 hover:scale-105 transition-all flex items-center justify-center gap-3">
+                    <i class="fa-solid fa-arrow-up"></i>
+                    <span>Vissza az elejére</span>
+                </a>
+                <button onclick="triggerConfetti()" class="w-full sm:w-auto px-8 py-4 rounded-xl glass-card text-white font-bold text-lg border border-slate-700 hover:bg-slate-800/80 hover:scale-105 transition-all flex items-center justify-center gap-3">
+                    <i class="fa-solid fa-sparkles text-force-amber"></i>
+                    <span>Látványos Fizikai Effekt</span>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="py-8 border-t border-slate-200 dark:border-slate-800 glass-panel">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-4 text-sm text-slate-500">
+            <p>© 2026 PhysicsLab - Az Erő Törvényei Interaktív Bemutató</p>
+            <div class="flex space-x-6 text-lg">
+                <a href="#hero" class="hover:text-force-cyan transition-colors"><i class="fa-solid fa-atom"></i></a>
+                <a href="#simulator" class="hover:text-force-cyan transition-colors"><i class="fa-solid fa-flask"></i></a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- INTERAKTÍV JAVASCRIPT & FIZIKAI MOTOR -->
+    <script>
+        // Téma váltás
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        const themeIcon = document.getElementById('theme-icon');
+
+        themeToggleBtn.addEventListener('click', () => {
+            const html = document.documentElement;
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                themeIcon.classList.remove('fa-moon');
+                themeIcon.classList.add('fa-sun');
+            } else {
+                html.classList.add('dark');
+                themeIcon.classList.remove('fa-sun');
+                themeIcon.classList.add('fa-moon');
+            }
+        });
+
+        // Mobil Menü
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        mobileMenuBtn.addEventListener('click', () => mobileMenu.classList.toggle('hidden'));
+
+        // Hero Background Canvas
+        const heroCanvas = document.getElementById('hero-canvas');
+        const hCtx = heroCanvas.getContext('2d');
+
+        function resizeHeroCanvas() {
+            heroCanvas.width = window.innerWidth;
+            heroCanvas.height = window.innerHeight;
+        }
+        resizeHeroCanvas();
+        window.addEventListener('resize', resizeHeroCanvas);
+
+        const heroParticles = Array.from({ length: 45 }, () => ({
+            x: Math.random() * window.innerWidth,
+            y: Math.random() * window.innerHeight,
+            vx: (Math.random() - 0.5) * 0.8,
+            vy: (Math.random() - 0.5) * 0.8,
+            radius: Math.random() * 2.5 + 1
+        }));
+
+        function animateHeroCanvas() {
+            hCtx.clearRect(0, 0, heroCanvas.width, heroCanvas.height);
+            
+            heroParticles.forEach((p, i) => {
+                p.x += p.vx;
+                p.y += p.vy;
+
+                if (p.x < 0 || p.x > heroCanvas.width) p.vx *= -1;
+                if (p.y < 0 || p.y > heroCanvas.height) p.vy *= -1;
+
+                hCtx.beginPath();
+                hCtx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                hCtx.fillStyle = 'rgba(6, 182, 212, 0.4)';
+                hCtx.fill();
+
+                for (let j = i + 1; j < heroParticles.length; j++) {
+                    const p2 = heroParticles[j];
+                    const dist = Math.hypot(p.x - p2.x, p.y - p2.y);
+                    if (dist < 130) {
+                        hCtx.beginPath();
+                        hCtx.moveTo(p.x, p.y);
+                        hCtx.lineTo(p2.x, p2.y);
+                        hCtx.strokeStyle = `rgba(168, 85, 247, ${0.15 * (1 - dist / 130)})`;
+                        hCtx.lineWidth = 1;
+                        hCtx.stroke();
+                    }
+                }
+            });
+
+            requestAnimationFrame(animateHeroCanvas);
+        }
+        animateHeroCanvas();
+
+        // --- I. TÖRVÉNY SZIMULÁCIÓ ---
+        const law1Canvas = document.getElementById('law1-canvas');
+        const l1Ctx = law1Canvas.getContext('2d');
+        let l1X = 50;
+        let l1Vx = 0;
+        let l1Friction = false;
+
+        function resizeLaw1Canvas() {
+            law1Canvas.width = law1Canvas.parentElement.clientWidth;
+            law1Canvas.height = law1Canvas.parentElement.clientHeight;
+        }
+        resizeLaw1Canvas();
+        window.addEventListener('resize', resizeLaw1Canvas);
+
+        document.getElementById('btn-push-box').addEventListener('click', () => {
+            l1Vx = 5;
+            document.getElementById('law1-status').innerText = 'Állapot: Mozgásban';
+        });
+
+        document.getElementById('btn-toggle-law1-friction').addEventListener('click', () => {
+            l1Friction = !l1Friction;
+            const txt = document.getElementById('law1-friction-text');
+            txt.innerText = l1Friction ? 'BEKAPCSOLVA' : 'KIKAPCSOLVA';
+            txt.className = l1Friction ? 'text-green-400' : 'text-rose-400';
+        });
+
+        function animateLaw1() {
+            l1Ctx.clearRect(0, 0, law1Canvas.width, law1Canvas.height);
+            
+            if (l1Friction && l1Vx > 0) {
+                l1Vx -= 0.02;
+                if (l1Vx < 0) l1Vx = 0;
+            }
+
+            l1X += l1Vx;
+            if (l1X > law1Canvas.width - 40) {
+                l1X = law1Canvas.width - 40;
+                l1Vx = 0;
+            }
+
+            if (l1Vx === 0 && l1X !== 50) {
+                document.getElementById('law1-status').innerText = 'Állapot: Megállt';
+            }
+
+            // Talaj
+            l1Ctx.beginPath();
+            l1Ctx.moveTo(0, law1Canvas.height - 30);
+            l1Ctx.lineTo(law1Canvas.width, law1Canvas.height - 30);
+            l1Ctx.strokeStyle = '#475569';
+            l1Ctx.lineWidth = 2;
+            l1Ctx.stroke();
+
+            // Kocka
+            l1Ctx.fillStyle = '#06b6d4';
+            l1Ctx.fillRect(l1X, law1Canvas.height - 60, 30, 30);
+
+            requestAnimationFrame(animateLaw1);
+        }
+        animateLaw1();
+
+        // --- II. TÖRVÉNY SZIMULÁTOR (F = m * a) ---
+        const simCanvas = document.getElementById('sim-canvas');
+        const sCtx = simCanvas.getContext('2d');
+
+        function resizeSimCanvas() {
+            simCanvas.width = simCanvas.parentElement.clientWidth;
+            simCanvas.height = simCanvas.parentElement.clientHeight;
+        }
+        resizeSimCanvas();
+        window.addEventListener('resize', resizeSimCanvas);
+
+        let force = 50;
+        let mass = 10;
+        let useFriction = false;
+        let posX = simCanvas.width / 2 || 200;
+        let velocity = 0;
+        let acceleration = 0;
+
+        const sliderForce = document.getElementById('slider-force');
+        const sliderMass = document.getElementById('slider-mass');
+        const toggleFriction = document.getElementById('toggle-friction');
+        const valForce = document.getElementById('val-force');
+        const valMass = document.getElementById('val-mass');
+        const valAcc = document.getElementById('val-acc');
+        const valVel = document.getElementById('val-vel');
+        const btnResetSim = document.getElementById('btn-reset-sim');
+
+        sliderForce.addEventListener('input', (e) => {
+            force = parseFloat(e.target.value);
+            valForce.innerText = force;
+        });
+
+        sliderMass.addEventListener('input', (e) => {
+            mass = parseFloat(e.target.value);
+            valMass.innerText = mass;
+        });
+
+        toggleFriction.addEventListener('change', (e) => {
+            useFriction = e.target.checked;
+        });
+
+        btnResetSim.addEventListener('click', () => {
+            posX = simCanvas.width / 2;
+            velocity = 0;
+            force = 50;
+            mass = 10;
+            useFriction = false;
+            sliderForce.value = 50;
+            sliderMass.value = 10;
+            toggleFriction.checked = false;
+            valForce.innerText = 50;
+            valMass.innerText = 10;
+        });
+
+        let lastTime = performance.now();
+
+        function renderSim(currentTime) {
+            const dt = (currentTime - lastTime) / 1000;
+            lastTime = currentTime;
+
+            sCtx.clearRect(0, 0, simCanvas.width, simCanvas.height);
+
+            let netForce = force;
+            if (useFriction && Math.abs(velocity) > 0.01) {
+                const frictionMag = 0.2 * mass * 9.81;
+                const frictionDirection = velocity > 0 ? -1 : 1;
+                netForce += frictionDirection * frictionMag;
+            }
+
+            acceleration = netForce / mass;
+
+            velocity += acceleration * dt * 5;
+            posX += velocity * dt * 10;
+
+            const boxSize = Math.max(30, Math.min(80, mass * 2.5));
+            if (posX < boxSize / 2) {
+                posX = boxSize / 2;
+                velocity *= -0.5;
+            } else if (posX > simCanvas.width - boxSize / 2) {
+                posX = simCanvas.width - boxSize / 2;
+                velocity *= -0.5;
+            }
+
+            valAcc.innerText = acceleration.toFixed(2) + ' m/s²';
+            valVel.innerText = velocity.toFixed(2) + ' m/s';
+
+            const groundY = simCanvas.height - 40;
+            sCtx.beginPath();
+            sCtx.moveTo(0, groundY);
+            sCtx.lineTo(simCanvas.width, groundY);
+            sCtx.strokeStyle = '#475569';
+            sCtx.lineWidth = 3;
+            sCtx.stroke();
+
+            const boxY = groundY - boxSize / 2;
+            sCtx.fillStyle = '#a855f7';
+            sCtx.shadowColor = '#a855f7';
+            sCtx.shadowBlur = 15;
+            sCtx.fillRect(posX - boxSize / 2, boxY - boxSize / 2, boxSize, boxSize);
+            sCtx.shadowBlur = 0;
+
+            sCtx.fillStyle = '#ffffff';
+            sCtx.font = 'bold 12px Inter';
+            sCtx.textAlign = 'center';
+            sCtx.fillText(`${mass} kg`, posX, boxY + 4);
+
+            if (Math.abs(force) > 1) {
+                drawArrow(posX, boxY, posX + force * 1.5, boxY, '#06b6d4', 'F');
+            }
+
+            if (Math.abs(acceleration) > 0.1) {
+                drawArrow(posX, boxY - boxSize / 2 - 15, posX + acceleration * 15, boxY - boxSize / 2 - 15, '#f59e0b', 'a');
+            }
+
+            requestAnimationFrame(renderSim);
+        }
+
+        function drawArrow(fromx, fromy, tox, toy, color, label) {
+            const headlen = 10;
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            
+            sCtx.beginPath();
+            sCtx.moveTo(fromx, fromy);
+            sCtx.lineTo(tox, toy);
+            sCtx.strokeStyle = color;
+            sCtx.lineWidth = 4;
+            sCtx.stroke();
+
+            sCtx.beginPath();
+            sCtx.moveTo(tox, toy);
+            sCtx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            sCtx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            sCtx.fillStyle = color;
+            sCtx.fill();
+
+            sCtx.fillStyle = color;
+            sCtx.font = 'bold 14px Inter';
+            sCtx.fillText(label, tox + (dx > 0 ? 15 : -15), toy + 4);
+        }
+
+        requestAnimationFrame(renderSim);
+
+        // --- III. TÖRVÉNY SZIMULÁCIÓ ---
+        const law3Canvas = document.getElementById('law3-canvas');
+        const l3Ctx = law3Canvas.getContext('2d');
+        let objA = { x: 80, vx: 0, color: '#a855f7' };
+        let objB = { x: 320, vx: 0, color: '#f59e0b' };
+
+        function resizeLaw3Canvas() {
+            law3Canvas.width = law3Canvas.parentElement.clientWidth;
+            law3Canvas.height = law3Canvas.parentElement.clientHeight;
+        }
+        resizeLaw3Canvas();
+        window.addEventListener('resize', resizeLaw3Canvas);
+
+        document.getElementById('btn-trigger-collision').addEventListener('click', () => {
+            objA.x = 80;
+            objB.x = law3Canvas.width - 80;
+            objA.vx = 4;
+            objB.vx = -4;
+        });
+
+        function animateLaw3() {
+            l3Ctx.clearRect(0, 0, law3Canvas.width, law3Canvas.height);
+            
+            objA.x += objA.vx;
+            objB.x += objB.vx;
+
+            // Kölcsönhatás / Útközés
+            if (objB.x - objA.x <= 40) {
+                objA.vx = -3;
+                objB.vx = 3;
+            }
+
+            // Falak
+            if (objA.x < 30) { objA.x = 30; objA.vx = 0; }
+            if (objB.x > law3Canvas.width - 30) { objB.x = law3Canvas.width - 30; objB.vx = 0; }
+
+            const y = law3Canvas.height / 2;
+
+            // A Test
+            l3Ctx.fillStyle = objA.color;
+            l3Ctx.beginPath();
+            l3Ctx.arc(objA.x, y, 20, 0, Math.PI * 2);
+            l3Ctx.fill();
+
+            // B Test
+            l3Ctx.fillStyle = objB.color;
+            l3Ctx.beginPath();
+            l3Ctx.arc(objB.x, y, 20, 0, Math.PI * 2);
+            l3Ctx.fill();
+
+            requestAnimationFrame(animateLaw3);
+        }
+        animateLaw3();
+
+        // Scroll Reveal
+        const revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('active');
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+
+        // Kvíz Logika
+        const quizData = [
+            {
+                q: "Mi történik egy nyugalomban lévő testtel, ha a rá ható erők eredője nullával egyenlő?",
+                options: [
+                    "Magától gyorsulni kezd",
+                    "Nyugalomban marad (Newton I. törvénye)",
+                    "Azonnal eltűnik",
+                    "Körpályára áll"
+                ],
+                correct: 1
+            },
+            {
+                q: "Hogyan változik a test gyorsulása, ha kétszeresére növeljük a rá ható erőt állandó tömeg mellett?",
+                options: [
+                    "Négyszeresére nő",
+                    "A felére csökken",
+                    "Kétszeresére nő (F = m × a)",
+                    "Nem változik"
+                ],
+                correct: 2
+            },
+            {
+                q: "Milyen irányú az ellenhatási erő a hatási erőhöz képest (Newton III. törvénye)?",
+                options: [
+                    "Azonos irányú",
+                    "Ellentétes irányú",
+                    "Merőleges rá",
+                    "Tetszőleges irányú"
+                ],
+                correct: 1
+            }
+        ];
+
+        let currentQ = 0;
+        let score = 0;
+
+        const qText = document.getElementById('quiz-question');
+        const qOptions = document.getElementById('quiz-options');
+        const qProgress = document.getElementById('quiz-progress-text');
+        const qScore = document.getElementById('quiz-score-text');
+        const qFeedback = document.getElementById('quiz-feedback');
+        const qNextBtn = document.getElementById('quiz-next-btn');
+        const qContainer = document.getElementById('quiz-container');
+        const qResult = document.getElementById('quiz-result');
+
+        function loadQuestion() {
+            const data = quizData[currentQ];
+            qText.innerText = data.q;
+            qProgress.innerText = `${currentQ + 1} / ${quizData.length} Kérdés`;
+            qScore.innerText = `Pontszám: ${score}`;
+            qFeedback.classList.add('hidden');
+            qNextBtn.classList.add('hidden');
+            qOptions.innerHTML = '';
+
+            data.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = "w-full text-left p-4 rounded-xl border border-slate-300 dark:border-slate-700 hover:border-force-cyan transition-all text-sm font-medium flex justify-between items-center";
+                btn.innerText = opt;
+                btn.onclick = () => selectOption(idx);
+                qOptions.appendChild(btn);
+            });
+        }
+
+        function selectOption(idx) {
+            const data = quizData[currentQ];
+            const buttons = qOptions.querySelectorAll('button');
+
+            buttons.forEach(b => b.disabled = true);
+
+            if (idx === data.correct) {
+                score++;
+                buttons[idx].classList.add('bg-green-500/20', 'border-green-500', 'text-green-400');
+                qFeedback.innerText = "Helyes válasz! 🎉";
+                qFeedback.className = "p-4 rounded-xl text-sm font-semibold mb-6 bg-green-500/20 text-green-400 border border-green-500";
+            } else {
+                buttons[idx].classList.add('bg-rose-500/20', 'border-rose-500', 'text-rose-400');
+                buttons[data.correct].classList.add('bg-green-500/20', 'border-green-500', 'text-green-400');
+                qFeedback.innerText = "Helytelen válasz!";
+                qFeedback.className = "p-4 rounded-xl text-sm font-semibold mb-6 bg-rose-500/20 text-rose-400 border border-rose-500";
+            }
+
+            qFeedback.classList.remove('hidden');
+            qNextBtn.classList.remove('hidden');
+        }
+
+        qNextBtn.onclick = () => {
+            currentQ++;
+            if (currentQ < quizData.length) {
+                loadQuestion();
+            } else {
+                qContainer.classList.add('hidden');
+                qResult.classList.remove('hidden');
+                document.getElementById('final-score-text').innerText = `${score} / ${quizData.length} pont`;
+            }
+        };
+
+        document.getElementById('quiz-restart-btn').onclick = () => {
+            currentQ = 0;
+            score = 0;
+            qResult.classList.add('hidden');
+            qContainer.classList.remove('hidden');
+            loadQuestion();
+        };
+
+        loadQuestion();
+
+        // Záró Dia Részecske Canvas & Effekt
+        const thanksCanvas = document.getElementById('thanks-canvas');
+        const tCtx = thanksCanvas.getContext('2d');
+
+        function resizeThanksCanvas() {
+            if (!thanksCanvas) return;
+            thanksCanvas.width = thanksCanvas.parentElement.clientWidth;
+            thanksCanvas.height = thanksCanvas.parentElement.clientHeight;
+        }
+        resizeThanksCanvas();
+        window.addEventListener('resize', resizeThanksCanvas);
+
+        const thanksParticles = Array.from({ length: 60 }, () => ({
+            x: Math.random() * (thanksCanvas.width || window.innerWidth),
+            y: Math.random() * (thanksCanvas.height || 400),
+            vx: (Math.random() - 0.5) * 1.5,
+            vy: (Math.random() - 0.5) * 1.5,
+            size: Math.random() * 3 + 1,
+            color: ['#06b6d4', '#a855f7', '#f59e0b', '#3b82f6'][Math.floor(Math.random() * 4)]
+        }));
+
+        function animateThanksCanvas() {
+            if (!thanksCanvas) return;
+            tCtx.clearRect(0, 0, thanksCanvas.width, thanksCanvas.height);
+
+            thanksParticles.forEach(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+
+                if (p.x < 0 || p.x > thanksCanvas.width) p.vx *= -1;
+                if (p.y < 0 || p.y > thanksCanvas.height) p.vy *= -1;
+
+                tCtx.beginPath();
+                tCtx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                tCtx.fillStyle = p.color;
+                tCtx.shadowBlur = 10;
+                tCtx.shadowColor = p.color;
+                tCtx.fill();
+                tCtx.shadowBlur = 0;
+            });
+
+            requestAnimationFrame(animateThanksCanvas);
+        }
+        animateThanksCanvas();
+
+        function triggerConfetti() {
+            for (let i = 0; i < 50; i++) {
+                thanksParticles.push({
+                    x: thanksCanvas.width / 2,
+                    y: thanksCanvas.height / 2,
+                    vx: (Math.random() - 0.5) * 14,
+                    vy: (Math.random() - 0.5) * 14,
+                    size: Math.random() * 5 + 2,
+                    color: ['#06b6d4', '#a855f7', '#f59e0b', '#f43f5e', '#22c55e'][Math.floor(Math.random() * 5)]
+                });
+            }
+        }
+    </script>
+</body>
+</html>
